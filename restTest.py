@@ -89,7 +89,8 @@ class RestTestUI(object):
         self.setGeometry()
 
     def onPickUrl(self, *args):
-        self.url.set(self.urllist.get())
+        if "urllist" in dir(self):
+			self.url.set(self.urllist.get())
 
     def setGeometry(self):
         g = self.settings.get("geometry")
