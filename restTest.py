@@ -41,6 +41,8 @@ class RestTestUI(object):
 
         self.master = master
         self.settings = settings
+        if not "method4url" in settings: settings["method4url"] = {}
+        if not "data4url" in settings: settings["data4url"] = {}
 
         self.frame = Frame(master)
         self.frame.pack(fill=BOTH, expand=1)
@@ -63,7 +65,7 @@ class RestTestUI(object):
         row += 1
         Label(self.frame, text="Method: ").grid(row=row, column=0, sticky=NE)
         self.method = StringVar(master)
-        self.method.set(self.settings.get("method", "GET")) # default value
+        self.method.set(self.settings.get("method", "GET"))
         list = apply(OptionMenu, (self.frame, self.method) + ("GET", "POST", "PUT", "DELETE"))
         list.grid(row=row, column=1, sticky="NWE")
 
@@ -79,7 +81,7 @@ class RestTestUI(object):
         start_button = Button(self.frame, text=">> Issue Request <<", command=self.start)
         start_button.grid(row=row, column=1, sticky="NEW")
 
-        # evidence database selection
+        # response text field
         row += 1
         Label(self.frame, text="Response: ").grid(row=row, column=0, sticky=NE)
         self.response = SyntaxHighlightingText(self.frame)
@@ -90,7 +92,14 @@ class RestTestUI(object):
 
     def onPickUrl(self, *args):
         if "urllist" in dir(self):
-			self.url.set(self.urllist.get())
+            url = self.urllist.get()
+            self.url.set(url)
+            method = self.settings["method4url"].get(url)
+            if method is not None:
+                self.method.set(method)
+            data = self.settings["data4url"].get(url)
+            if data is not None:
+                self.data.select(data)
 
     def setGeometry(self):
         g = self.settings.get("geometry")
@@ -106,6 +115,8 @@ class RestTestUI(object):
         self.settings["url"] = url
         self.settings["data"] = data
         self.settings["method"] = method
+        self.settings["method4url"][url] = method
+        self.settings["data4url"][url] = data
         urllist = self.settings.get("urllist", [])
         if url in urllist:
             urllist.remove(url)
@@ -117,9 +128,11 @@ class RestTestUI(object):
         # make call
         try:
             opener = urllib2.build_opener(urllib2.HTTPHandler)
-            print "url: %s\ndata:\n%s" % (url, data)
+            print "url: %s" % url
             request = urllib2.Request(url, data=data)
             request.add_header('Content-Type', 'application/json')
+            request.add_data(data)
+            print "data:\n%s" % data
             request.get_method = lambda: method
             url = opener.open(request)
             response = url.read()
